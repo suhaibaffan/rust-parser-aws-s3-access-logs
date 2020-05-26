@@ -1,0 +1,15 @@
+[package]
+name = "rust-parser-aws-s3-access-logs"
+version = "0.1.0"
+authors = ["Suhaib Affan <suhaibaffan91@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "parse"
+crate-type = ["dylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ferris-says = "0.2.0"
+regex = "1"
