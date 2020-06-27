@@ -7,13 +7,7 @@ use std::collections::HashMap;
 
 const I_AM_DONE_REGEX: &str = r#"[^\s"\[\]]+|".*?"|\[.*?\]"#;
 
-#[no_mangle]
-fn aws_parser(log :&str) -> Vec<&str> {
-
-    log.split('\n').collect()
-}
-
-fn s3_parser( log :&str) {
+    fn s3_parser( log :&str) -> Vec<HashMap<&str, regex::Captures<'_>>>{
     
     let re = Regex::new(I_AM_DONE_REGEX).unwrap();
     let mut finalResult = Vec::new(); 
@@ -56,31 +50,57 @@ fn s3_parser( log :&str) {
         }
         finalResult.push( map );
     }
-    println!("{:?}", finalResult );     
+    // println!("{:?}", finalResult );
+    finalResult 
 }
 
-#[macro_use]
-pub extern fn parse( logFile: String ) {
+#[no_mangle]
+pub extern fn parseLogs( logFile: String ) {
     let stdout = stdout();
     let message = String::from( "AWS_S3_Parser" );
     let width = message.chars().count();
+    let mut parsedLogs = Vec::new();
+    // let mut fileLogs = Vec::new();
 
     let mut writer = BufWriter::new( stdout.lock() );
     say( message.as_bytes(), width, &mut writer ).unwrap();
 
-    let raw_log = logFile.to_string();
+    // format!( r#"{}"#, logFile ); 
+    let raw_log:String = format!( r#"{}"#, logFile ); 
+    let logs:Vec<& str> = raw_log.split( '\n' ).collect();
 
-    let logs :Vec<&str> = aws_parser( &raw_log );
-    for elem in logs.iter() {
-        s3_parser( &elem );
+    println!("{:?}", logs );
+    for &elem in logs.iter() {
+        let fileLogs = s3_parser( &elem );
+        parsedLogs.push( fileLogs );
     }
+
+    println!( "{:?}", parsedLogs );
+    // return parsedLogs;
 }
 
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
     fn parse() {
         assert_eq!(2 + 2, 4);
+    }
+
+    #[test]
+    fn testParser() {
+        use std::fs::File;
+        use std::io::BufReader;
+        use std::io::prelude::*;
+        use std::path::Path;
+
+        let filePath = Path::new("./sample.txt").as_os_str();
+        println!( "{:?}", filePath );
+        let file = File::open( &filePath ).unwrap();
+        let mut buf_reader = BufReader::new( file );
+        let mut contents  = String::new();
+        buf_reader.read_to_string( &mut contents ).unwrap();
+        parseLogs( contents );
     }
 }
