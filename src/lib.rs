@@ -4,10 +4,11 @@ use std::io::{ stdout, BufWriter};
 use ferris_says::say;
 use regex::Regex;
 use std::collections::HashMap;
+use rayon::prelude::*;
 
-const I_AM_DONE_REGEX: &str = r#"[^\s"\[\]]+|".*?"|\[.*?\]"#;
+const I_AM_DONE_REGEX: &str = r#"[\S"\[\]]+|".*?"|\[.*?\]"#;
 
-    fn s3_parser( log :&str) -> Vec<HashMap<&str, regex::Captures<'_>>>{
+fn s3_parser( log :&str) -> Vec<HashMap<&str, regex::Captures<'_>>>{
     
     let re = Regex::new(I_AM_DONE_REGEX).unwrap();
     let mut finalResult = Vec::new(); 
@@ -59,23 +60,13 @@ pub extern fn parseLogs( logFile: String ) {
     let stdout = stdout();
     let message = String::from( "AWS_S3_Parser" );
     let width = message.chars().count();
-    let mut parsedLogs = Vec::new();
-    // let mut fileLogs = Vec::new();
 
     let mut writer = BufWriter::new( stdout.lock() );
     say( message.as_bytes(), width, &mut writer ).unwrap();
 
-    // format!( r#"{}"#, logFile ); 
-    let raw_log:String = format!( r#"{}"#, logFile ); 
-    let logs:Vec<& str> = raw_log.split( '\n' ).collect();
+    let mut logs: Vec<_> = logFile.par_lines().map( |item| s3_parser( item ) ).collect();
 
     println!("{:?}", logs );
-    for &elem in logs.iter() {
-        let fileLogs = s3_parser( &elem );
-        parsedLogs.push( fileLogs );
-    }
-
-    println!( "{:?}", parsedLogs );
     // return parsedLogs;
 }
 
